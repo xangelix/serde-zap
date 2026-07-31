@@ -9,7 +9,7 @@
 //! Decoding is a single branch on the first byte followed by one bulk
 //! fixed-width read, unlike LEB128 which branches per byte.
 //!
-//! The encode side lives in `crate::ser` (it needs access to the `Writer`):
+//! The encode side lives in `super::ser` (it needs access to the `Writer`):
 //! each width branch reserves exactly the bytes it writes, so exact-fit
 //! output buffers work.
 

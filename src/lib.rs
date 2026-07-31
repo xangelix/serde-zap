@@ -47,7 +47,7 @@ pub fn to_slice<'a, T: Serialize + ?Sized>(value: &T, buf: &'a mut [u8]) -> Resu
         w.written()
     };
     // n <= buf.len() by construction (SliceWriter bounds every write), but
-    // use get_mut to stay panic-free by lint policy.
+    // use get_mut to stay panic-free
     let written = buf.get_mut(..n).ok_or(Error::ExceedsBuffer)?;
     Ok(written)
 }

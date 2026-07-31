@@ -1,4 +1,4 @@
-# serde-zap
+# serde-zap ⚡
 
 [![Crates.io](https://img.shields.io/crates/v/serde-zap)](https://crates.io/crates/serde-zap)
 [![Docs.rs](https://docs.rs/serde-zap/badge.svg)](https://docs.rs/serde-zap)

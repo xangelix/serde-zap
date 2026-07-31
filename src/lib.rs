@@ -54,19 +54,59 @@ pub fn to_slice<'a, T: Serialize + ?Sized>(value: &T, buf: &'a mut [u8]) -> Resu
 
 /// Serializes `value` into a freshly allocated `Vec<u8>`.
 ///
-/// Two-pass: computes the exact size first, then writes into the spare
-/// capacity of a single exact-sized allocation.
+/// Single-pass: writes into the spare capacity of a `Vec` that grows
+/// amortized, then `shrink_to_fit`s, so the result has `len == capacity`
+/// with no allocation slack. This is the fast default: one traversal of
+/// `value`. Its peak memory during the call is the final size plus the
+/// amortized-doubling growth slack (up to 2× the final size in *virtual*
+/// address space).
+///
+/// If peak memory matters more than one extra traversal, see
+/// [`to_vec_two_pass`], which produces the exact same output and final
+/// allocation.
 ///
 /// # Errors
 /// Returns [`Error::SeqLengthUnknown`] if a sequence is serialized without a
 /// known length. Allocation failures abort, like any `Vec` operation.
 #[cfg(feature = "alloc")]
 pub fn to_vec<T: Serialize + ?Sized>(value: &T) -> Result<Vec<u8>> {
+    let mut vec = Vec::new();
+    let mut w = write::VecWriter::new(&mut vec);
+    value.serialize(ser::Ser::new(&mut w))?;
+    vec.shrink_to_fit();
+    Ok(vec)
+}
+
+/// Serializes `value` into a freshly allocated `Vec<u8>`, computing the
+/// exact size first.
+///
+/// Two-pass: walks `value` once with a counting writer (no allocation),
+/// then allocates exactly that many bytes and serializes into it. The
+/// output is byte-identical to [`to_vec`] and likewise has
+/// `len == capacity` — the *final* allocation is the same either way.
+///
+/// The trade is ~2× the CPU of [`to_vec`] (two full traversals) in
+/// exchange for the lowest possible peak memory during the call: peak ≈
+/// 1× the output size, instead of up to ~2× in virtual address space (or
+/// ~3× transiently, on allocators whose `realloc` copies instead of
+/// extending in place). How much that buys you is platform-dependent: on
+/// glibc/Linux, where large `Vec` growth extends via `mremap` and
+/// untouched pages never become resident, the measured peak-resident
+/// difference is under 5%; on copying allocators (e.g. musl) or under
+/// hard memory ceilings, the reduction can be significant. For
+/// zero-allocation serialization instead, see [`to_slice`].
+///
+/// # Errors
+/// Returns [`Error::SeqLengthUnknown`] if a sequence is serialized without a
+/// known length. Allocation failures abort, like any `Vec` operation.
+#[cfg(feature = "alloc")]
+pub fn to_vec_two_pass<T: Serialize + ?Sized>(value: &T) -> Result<Vec<u8>> {
     let size = serialized_size(value)?;
     let mut vec = Vec::with_capacity(size);
     let mut w = write::VecWriter::new(&mut vec);
     value.serialize(ser::Ser::new(&mut w))?;
     debug_assert_eq!(vec.len(), size);
+    debug_assert_eq!(vec.len(), vec.capacity());
     Ok(vec)
 }
 

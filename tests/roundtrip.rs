@@ -11,6 +11,11 @@ where
     T: Serialize + for<'de> Deserialize<'de> + PartialEq + Debug,
 {
     let buf = to_vec(v).unwrap();
+    assert_eq!(
+        buf.len(),
+        buf.capacity(),
+        "to_vec must shrink to exact capacity"
+    );
     assert_eq!(buf.len(), serialized_size(v).unwrap(), "size mismatch");
     let back: T = from_bytes(&buf).unwrap();
     assert_eq!(&back, v, "roundtrip mismatch");
@@ -311,6 +316,20 @@ fn dos_length_guard() {
 
     // Zero-sized elements still roundtrip (size_hint falls back to None).
     roundtrip(&vec![(); 100]);
+}
+
+#[test]
+fn to_vec_two_pass_matches_to_vec() {
+    let v = (
+        42u64,
+        "a reasonably short string".to_string(),
+        (0..300).map(|i| format!("item-{i}")).collect::<Vec<_>>(),
+        vec![7u32; 1000],
+    );
+    let single = to_vec(&v).unwrap();
+    let two = serde_zap::to_vec_two_pass(&v).unwrap();
+    assert_eq!(single, two, "single-pass and two-pass must agree");
+    assert_eq!(two.len(), two.capacity(), "two-pass must be exact capacity");
 }
 
 #[test]

@@ -36,7 +36,9 @@ struct Reading {
 
 let reading = Reading { sensor_id: 7, value: 21.5, label: "ok".into() };
 
-// Serialize into a Vec (two-pass: exact-size single allocation).
+// Serialize into a Vec (single-pass, then shrunk to exact capacity).
+// For the lowest peak memory during the call at ~2x CPU, use
+// `serde_zap::to_vec_two_pass` — output is byte-identical.
 let bytes = serde_zap::to_vec(&reading).unwrap();
 
 // Deserialize (borrowing &str/&[u8] zero-copy where the type allows).

@@ -257,7 +257,7 @@ impl<'de> de::SeqAccess<'de> for Seq<'_, 'de> {
     fn size_hint(&self) -> Option<usize> {
         // DoS guard: if the claimed element count exceeds the remaining input bytes,
         // the input is necessarily corrupt for elements of non-zero size, so refuse to hint.
-        
+
         // This keeps deserializers (including serde_zap::full_vec) from preallocating a huge buffer.
         // Zero-sized-element sequences merely lose their preallocation, which is still correct.
         if self.remaining > self.de.r.remaining() {

@@ -7,6 +7,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/xangelix/serde-zap"
 keywords = ["serde", "serialization", "binary", "encoding", "no_std"]
 categories = ["encoding", "no-std", "embedded", "parser-implementations", "compression"]
+exclude = [".github/", "ci/", "/Cargo.lock", "/rust-toolchain.toml"]
 
 [features]
 default = ["alloc"]

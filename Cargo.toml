@@ -4,3 +4,19 @@ version = "0.1.0"
 edition = "2024"
 description = "Fast binary serialization for serde"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/xangelix/serde-zap"
+keywords = ["serde", "serialization", "binary", "encoding", "no_std"]
+categories = ["encoding", "no-std", "embedded", "parser-implementations", "compression"]
+
+[features]
+default = ["alloc"]
+alloc = ["serde/alloc"]
+
+[dependencies]
+serde = { version = "1", default-features = false }
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+
+[lib]
+name = "serde_zap"

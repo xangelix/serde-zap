@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  BENCH_REPO: https://github.com/djkoloski/rust_serialization_benchmark.git
+  # Pinned for reproducibility; ci/rust_serialization_benchmark.patch is
+  # generated against this commit. Bump both together when updating.
+  BENCH_COMMIT: dcbb4332a911512d95561d3ca99c56a6c7edab5e
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests + doctests
+        run: cargo test
+      - name: no_std build check (no alloc)
+        run: cargo build --no-default-features
+      - name: no_std test check (no alloc)
+        run: cargo test --no-default-features
+
+  lint:
+    name: Lint (fmt, clippy, typos, package)
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tooling
+        run: |
+          rustup component add rustfmt clippy
+          pacman -Syu --noconfirm --needed typos || cargo install typos-cli
+      - name: cargo fmt --check
+        run: cargo fmt --check
+      - name: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: typos
+        run: typos
+      - name: crates.io packaging check
+        run: cargo publish --dry-run
+
+  miri:
+    name: Miri
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install nightly with miri + rust-src
+        run: rustup toolchain install nightly --profile minimal --component miri,rust-src
+      - name: cargo miri test
+        run: cargo +nightly miri test
+
+  fuzz:
+    name: Fuzz (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [from_bytes, roundtrip, truncate]
+    container:
+      image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-fuzz
+        run: pacman -Syu --noconfirm --needed cargo-fuzz gcc
+      - name: Fuzz for 90 seconds
+        run: cargo fuzz run ${{ matrix.target }} -- -max_total_time=90
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}
+          path: fuzz/artifacts/
+
+  bench:
+    name: Full rust_serialization_benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    container:
+      image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
+      options: --user root
+    steps:
+      - name: Install build tools
+        run: pacman -Syu --noconfirm --needed base-devel git
+      - name: Checkout serde-zap
+        uses: actions/checkout@v4
+        with:
+          path: serde-zap
+      - name: Clone benchmark (pinned)
+        run: |
+          git clone "$BENCH_REPO" rust_serialization_benchmark
+          git -C rust_serialization_benchmark checkout "$BENCH_COMMIT"
+      - name: Patch in serde-zap (local path dependency)
+        run: git -C rust_serialization_benchmark apply ../serde-zap/ci/rust_serialization_benchmark.patch
+      - name: Run full benchmark (prints to log)
+        working-directory: rust_serialization_benchmark
+        run: cargo run -p bencher
+      - name: Collect results
+        run: |
+          mkdir -p results
+          cp "$(ls -t rust_serialization_benchmark/benchmark_results/*.log | head -1)" results/
+          cp "$(ls -t rust_serialization_benchmark/benchmark_results/*.json | head -1)" results/
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: results/

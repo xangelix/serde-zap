@@ -1,0 +1,4 @@
+# cargo-fuzz generated artifacts (same convention as `cargo fuzz init`)
+target
+artifacts
+corpus

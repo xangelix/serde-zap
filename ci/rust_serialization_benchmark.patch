@@ -1,0 +1,149 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index fd9c0a9..c1285f7 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -95,6 +95,7 @@ rmp-serde = { version = "=1.3.1", optional = true }
+ ron = { version = "=0.12.2", optional = true }
+ savefile = { version = "=0.20.4", optional = true }
+ savefile-derive = { version = "=0.20.4", optional = true }
++serde-zap = { path = "../serde-zap", optional = true }
+ serde_bare = { version = "=0.5.0", optional = true }
+ serde-brief = { version = "=0.2.0", features = ["std"], optional = true }
+ serde_cbor = { version = "=0.11.2", optional = true }
+diff --git a/benches/bench.rs b/benches/bench.rs
+index 18354fd..da46ae0 100644
+--- a/benches/bench.rs
++++ b/benches/bench.rs
+@@ -65,6 +65,8 @@ use rust_serialization_benchmark::bench_rmp_serde;
+ use rust_serialization_benchmark::bench_ron;
+ #[cfg(feature = "savefile")]
+ use rust_serialization_benchmark::bench_savefile;
++#[cfg(feature = "serde-zap")]
++use rust_serialization_benchmark::bench_serde_zap;
+ #[cfg(feature = "serde_bare")]
+ use rust_serialization_benchmark::bench_serde_bare;
+ #[cfg(feature = "serde-brief")]
+@@ -240,6 +242,9 @@ fn bench_log(c: &mut Criterion) {
+     #[cfg(feature = "postcard")]
+     bench_postcard::bench_borrowable(BENCH, c, &data);
+ 
++    #[cfg(feature = "serde-zap")]
++    bench_serde_zap::bench_borrowable(BENCH, c, &data);
++
+     #[cfg(feature = "pot")]
+     bench_pot::bench_borrowable(BENCH, c, &data);
+ 
+@@ -478,6 +483,9 @@ fn bench_mesh(c: &mut Criterion) {
+     #[cfg(feature = "postcard")]
+     bench_postcard::bench(BENCH, c, &data);
+ 
++    #[cfg(feature = "serde-zap")]
++    bench_serde_zap::bench(BENCH, c, &data);
++
+     #[cfg(feature = "pot")]
+     bench_pot::bench(BENCH, c, &data);
+ 
+@@ -714,6 +722,9 @@ fn bench_minecraft_savedata(c: &mut Criterion) {
+     #[cfg(feature = "postcard")]
+     bench_postcard::bench_borrowable(BENCH, c, &data);
+ 
++    #[cfg(feature = "serde-zap")]
++    bench_serde_zap::bench_borrowable(BENCH, c, &data);
++
+     #[cfg(feature = "pot")]
+     bench_pot::bench_borrowable(BENCH, c, &data);
+ 
+@@ -950,6 +961,9 @@ fn bench_mk48(c: &mut Criterion) {
+     #[cfg(feature = "postcard")]
+     bench_postcard::bench(BENCH, c, &data);
+ 
++    #[cfg(feature = "serde-zap")]
++    bench_serde_zap::bench(BENCH, c, &data);
++
+     #[cfg(feature = "pot")]
+     bench_pot::bench(BENCH, c, &data);
+ 
+diff --git a/src/lib.rs b/src/lib.rs
+index 0fbcbc0..7f53a27 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -66,6 +66,8 @@ pub mod bench_rmp_serde;
+ pub mod bench_ron;
+ #[cfg(feature = "savefile")]
+ pub mod bench_savefile;
++#[cfg(feature = "serde-zap")]
++pub mod bench_serde_zap;
+ #[cfg(feature = "serde_bare")]
+ pub mod bench_serde_bare;
+ #[cfg(feature = "serde-brief")]
+diff --git a/src/bench_serde_zap.rs b/src/bench_serde_zap.rs
+new file mode 100644
+index 0000000..8b1daca
+--- /dev/null
++++ b/src/bench_serde_zap.rs
+@@ -0,0 +1,65 @@
++use crate::datasets::BorrowableData;
++use criterion::{black_box, Criterion};
++use serde::{Deserialize, Serialize};
++
++pub fn bench<T>(name: &'static str, c: &mut Criterion, data: &T)
++where
++    T: Serialize + for<'de> Deserialize<'de> + PartialEq,
++{
++    const BUFFER_LEN: usize = 10_000_000;
++
++    let mut group = c.benchmark_group(format!("{}/serde-zap", name));
++
++    let mut serialize_buffer = vec![0; BUFFER_LEN];
++    group.bench_function("serialize", |b| {
++        b.iter(|| {
++            black_box(
++                serde_zap::to_slice(black_box(&data), black_box(serialize_buffer.as_mut_slice()))
++                    .unwrap(),
++            );
++        })
++    });
++
++    let deserialize_buffer = serde_zap::to_vec(&data).unwrap();
++
++    group.bench_function("deserialize", |b| {
++        b.iter(|| {
++            black_box(serde_zap::from_bytes::<'_, T>(black_box(&deserialize_buffer)).unwrap());
++        })
++    });
++
++    crate::bench_size(name, "serde-zap", deserialize_buffer.as_slice());
++
++    assert!(serde_zap::from_bytes::<T>(&deserialize_buffer).unwrap() == *data);
++
++    group.finish();
++}
++
++pub fn bench_borrowable<T>(name: &'static str, c: &mut Criterion, data: &T)
++where
++    T: Serialize + for<'de> Deserialize<'de> + BorrowableData,
++    for<'a> T::Borrowed<'a>: Serialize + Deserialize<'a>,
++{
++    bench(name, c, data);
++
++    let mut group = c.benchmark_group(format!("{}/serde-zap", name));
++
++    let deserialize_buffer = serde_zap::to_vec(&data).unwrap();
++    let bdata = T::Borrowed::from(data);
++
++    // The borrowed variant type should encode exactly the same as the owned type.
++    assert_eq!(serde_zap::to_vec(&bdata).unwrap(), deserialize_buffer);
++
++    // The borrowed value we decode should be equivalent to the input
++    assert!(serde_zap::from_bytes::<T::Borrowed<'_>>(&deserialize_buffer).unwrap() == bdata);
++
++    group.bench_function("borrow", |b| {
++        b.iter(|| {
++            black_box(
++                serde_zap::from_bytes::<T::Borrowed<'_>>(black_box(&deserialize_buffer)).unwrap(),
++            );
++        })
++    });
++
++    group.finish();
++}

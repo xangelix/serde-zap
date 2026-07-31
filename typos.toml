@@ -1,0 +1,4 @@
+# typos configuration
+# The benchmark patch mirrors upstream code we don't control.
+[files]
+extend-exclude = ["ci/"]

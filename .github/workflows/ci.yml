@@ -23,8 +23,8 @@ jobs:
         run: cargo test
       - name: no_std build check (no alloc)
         run: cargo build --no-default-features
-      - name: no_std test check (no alloc)
-        run: cargo test --no-default-features
+      - name: no_std test check
+        run: cargo test --no-default-features --tests
 
   lint:
     name: Lint (fmt, clippy, typos, package)
@@ -103,6 +103,9 @@ jobs:
           git -C rust_serialization_benchmark checkout "$BENCH_COMMIT"
       - name: Patch in serde-zap (local path dependency)
         run: git -C rust_serialization_benchmark apply ../serde-zap/ci/rust_serialization_benchmark.patch
+      - name: Pin compactly-derive to match compactly 0.1.7
+        working-directory: rust_serialization_benchmark
+        run: cargo update -p compactly-derive --precise 0.1.7
       - name: Run full benchmark (prints to log)
         working-directory: rust_serialization_benchmark
         run: cargo run -p bencher

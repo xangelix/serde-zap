@@ -18,7 +18,7 @@ jobs:
       image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
       options: --user root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Unit tests + doctests
         run: cargo test
       - name: no_std build check (no alloc)
@@ -33,7 +33,7 @@ jobs:
       image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
       options: --user root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install tooling
         run: |
           rustup component add rustfmt clippy
@@ -54,7 +54,7 @@ jobs:
       image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
       options: --user root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install nightly with miri + rust-src
         run: rustup toolchain install nightly --profile minimal --component miri,rust-src
       - name: cargo miri test
@@ -71,7 +71,7 @@ jobs:
       image: registry.gitlab.com/xangelix-pub/containers/arch-rust-nightly-pin-common:latest
       options: --user root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install cargo-fuzz
         run: pacman -Syu --noconfirm --needed cargo-fuzz gcc
       - name: Fuzz for 90 seconds
@@ -94,7 +94,7 @@ jobs:
       - name: Install build tools
         run: pacman -Syu --noconfirm --needed base-devel git
       - name: Checkout serde-zap
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: serde-zap
       - name: Clone benchmark (pinned)
@@ -115,7 +115,7 @@ jobs:
           cp "$(ls -t rust_serialization_benchmark/benchmark_results/*.log | head -1)" results/
           cp "$(ls -t rust_serialization_benchmark/benchmark_results/*.json | head -1)" results/
       - name: Upload results artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-results
           path: results/

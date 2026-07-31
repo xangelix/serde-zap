@@ -25,8 +25,6 @@ Comparative benchmarks against other serde formats will be published here once s
 ## Usage
 
 ```rust
-# #[cfg(feature = "alloc")]
-# {
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -44,27 +42,31 @@ let bytes = serde_zap::to_vec(&reading).unwrap();
 // Deserialize (borrowing &str/&[u8] zero-copy where the type allows).
 let back: Reading = serde_zap::from_bytes(&bytes).unwrap();
 assert_eq!(back, reading);
-# }
 ```
 
 ### Without allocation (`no_std`, embedded)
 
 ```rust
-# use serde::{Serialize, Deserialize};
-# #[derive(Serialize, Deserialize)] struct Reading { sensor_id: u32 }
-# let reading = Reading { sensor_id: 7 };
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+struct Reading {
+    sensor_id: u32,
+}
+
+let reading = Reading { sensor_id: 7 };
 let mut buf = [0u8; 64];
 let written = serde_zap::to_slice(&reading, &mut buf).unwrap();
 
 let back: Reading = serde_zap::from_bytes(written).unwrap();
+assert_eq!(back, reading);
 ```
 
 ### Borrowed deserialization
 
 ```rust
-# #[cfg(feature = "alloc")]
-# {
-# use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize};
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct Record<'a> {
     name: &'a str,
@@ -77,7 +79,6 @@ let bytes = serde_zap::to_vec(&record).unwrap();
 // Zero-copy: `name` and `tags` point into `bytes`.
 let back: Record<'_> = serde_zap::from_bytes(&bytes).unwrap();
 assert_eq!(back, record);
-# }
 ```
 
 ### `full_vec`: full-length preallocation for big vectors
@@ -85,15 +86,13 @@ assert_eq!(back, record);
 Serde's stock `Vec` deserializer caps its preallocation and grows by doubling, which costs several reallocations and megabytes of memcpy on large vectors. This field adapter trusts the length prefix and allocates it in full. Wire output is byte-identical to the stock encoding.
 
 ```rust
-# #[cfg(feature = "alloc")]
-# {
-# use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize};
+
 #[derive(Serialize, Deserialize)]
 struct Mesh {
     #[serde(with = "serde_zap::full_vec")]
     triangles: Vec<f32>,
 }
-# }
 ```
 
 ### `pod_vec`: bulk memcpy for plain-old-data vectors
@@ -101,9 +100,8 @@ struct Mesh {
 For `Vec<T>` of plain-old-data structs, this adapter writes the whole vector as one bulk byte copy on both serialize and deserialize (the `serde_bytes` convention: byte-length prefix + raw bytes).
 
 ```rust
-# #[cfg(feature = "alloc")]
-# {
-# use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize};
+
 #[derive(Serialize, Deserialize, Clone, Copy)]
 #[repr(C)]
 struct Point { x: f32, y: f32, z: f32 }
@@ -116,7 +114,6 @@ struct Cloud {
     #[serde(with = "serde_zap::pod_vec")]
     points: Vec<Point>,
 }
-# }
 ```
 
 ## When serde-zap is the right choice

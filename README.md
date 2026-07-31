@@ -1,5 +1,8 @@
 # serde-zap
 
+[![Crates.io](https://img.shields.io/crates/v/serde-zap)](https://crates.io/crates/serde-zap)
+[![Docs.rs](https://docs.rs/serde-zap/badge.svg)](https://docs.rs/serde-zap)
+
 A fast binary serialization format for [serde](https://serde.rs), built to be the quickest way to turn Rust values into bytes and back... on serde.
 
 It combines some of the best ideas out there in other crates, and a few extras:

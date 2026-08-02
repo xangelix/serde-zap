@@ -23,8 +23,9 @@ It combines some of the best ideas out there in other crates, and a few extras:
 - **Zero-copy borrowed deserialization**: `&str` and `&[u8]` fields point straight into the input.
 - **A 1-byte error type**: niche-optimized, so `Result<T, E>` stays cheap to return through every hot path.
 - **Panic-free by construction**: every fallible operation returns `Result`; the crate forbids `unwrap`/`expect`/`panic`/slice-indexing via lint denies.
+- **Buffered stream adapters** (`std`): `to_writer` stages small writes into 8 KiB chunks on any `io::Write`; `from_reader` reads back from any `io::Read`. Underlying I/O errors come back verbatim.
 
-`#![no_std]` by default, with an `alloc` feature for `Vec`-backed APIs.
+`#![no_std]`-capable: `--no-default-features` builds for bare-metal with zero allocation, `alloc` adds the `Vec`-backed APIs, and `std` (on by default) adds the stream adapters.
 
 ## Performance
 
@@ -192,6 +193,34 @@ let back: Record<'_> = serde_zap::from_bytes(&bytes).unwrap();
 assert_eq!(back, record);
 ```
 
+### Streaming I/O (`std` feature, on by default)
+
+```rust
+use std::io::Cursor;
+
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+struct Reading {
+    sensor_id: u32,
+    value: f64,
+}
+
+let reading = Reading { sensor_id: 7, value: 21.5 };
+
+// Any io::Write works — files, sockets, compressors. Small writes are
+// staged in an 8 KiB buffer, so even unbuffered writers stay fast.
+let mut buf = Vec::new();
+serde_zap::to_writer(&reading, &mut buf).unwrap();
+
+// Read it back from any io::Read. Owned values only: the whole stream is
+// buffered before decoding (no borrowed &str/&[u8] fields).
+let back: Reading = serde_zap::from_reader(&mut Cursor::new(&buf)).unwrap();
+assert_eq!(back, reading);
+```
+
+Output is byte-identical to `to_vec`, and underlying I/O errors are returned verbatim (both functions return `std::io::Result`). The adapters compose with any `Write` — `zstd::Encoder`, `flate2`, a TLS socket — without an extra copy.
+
 ### `full_vec`: full-length preallocation for big vectors
 
 Serde's stock `Vec` deserializer caps its preallocation and grows by doubling, which costs several reallocations and megabytes of memcpy on large vectors. This field adapter trusts the length prefix and allocates it in full. Wire output is byte-identical to the stock encoding.
@@ -232,6 +261,7 @@ struct Cloud {
 - You want the **fastest serde-compatible** binary serialization (as measured by [rust_serialization_benchmark](https://github.com/djkoloski/rust_serialization_benchmark)).
 - `no_std` / embedded: `to_slice` and `from_bytes` work with zero allocation.
 - You deserialize large payloads and can borrow: zero-copy `&str`/`&[u8]`.
+- You need `io::Read`/`Write` support without giving up speed: buffered `to_writer`/`from_reader` on any stream.
 - Big flat vectors of numbers/POD structs: `pod_vec` turns ser/de into memcpy.
 
 ## When serde-zap is **not** the right choice
@@ -239,7 +269,7 @@ struct Cloud {
 - **Self-describing data**: the format carries no field names or types. You must know the type to decode. `deserialize_any` is unsupported. If you need schema-free decoding, use JSON/CBOR/etc.
 - **Schema evolution**: structs are encoded as bare field sequences. Adding, removing, or reordering fields breaks compatibility with existing data. Use a self-describing format or version your payloads explicitly.
 - **Long-term storage / interoperability**: this is a young crate; the wire format is not yet declared stable. Pin your version and re-encode on upgrades until 1.0.
-- **Streaming I/O**: the API is slice-based (`to_vec`, `to_slice`, `from_bytes`, `take_from_bytes`). There are no `io::Read`/`Write` flavors yet — frame messages yourself (e.g. length-prefix each `to_vec` output).
+- **Incremental decoding / message framing**: `from_reader` buffers the whole stream before decoding (owned values only), and there is no incremental decoder. Multiple messages on one connection still need framing — e.g. length-prefix each `to_vec`/`to_writer` output.
 - **Fully untrusted input for opt-ins**: `full_vec`/`pod_vec` trust length prefixes by design, don't opt into them for attacker-controlled data, and prefer size-limiting input you don't trust, as with any binary format.
 
 ## Wire format

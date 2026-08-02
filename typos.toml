@@ -2,3 +2,7 @@
 # The benchmark patch mirrors upstream code we don't control.
 [files]
 extend-exclude = ["ci/"]
+
+# Crate names that trip the dictionary.
+[default.extend-words]
+flate = "flate" # flate2 (compression crate)

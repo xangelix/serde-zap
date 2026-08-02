@@ -10,14 +10,16 @@ categories = ["encoding", "no-std", "embedded", "parser-implementations", "compr
 exclude = [".github/", "ci/", "/Cargo.lock", "/rust-toolchain.toml"]
 
 [features]
-default = ["alloc"]
+default = ["alloc", "std"]
 alloc = ["serde/alloc"]
+std = ["alloc"]
 
 [dependencies]
 serde = { version = "1", default-features = false }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
+zstd = "0.13"
 
 [lib]
 name = "serde_zap"

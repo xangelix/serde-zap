@@ -14,6 +14,8 @@
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 mod de;
 mod error;
@@ -27,12 +29,17 @@ pub mod full_vec;
 #[cfg(feature = "alloc")]
 pub mod pod_vec;
 
+#[cfg(feature = "std")]
+mod stream;
+
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
 use serde::{Deserialize, Serialize};
 
 pub use error::{Error, Result};
+#[cfg(feature = "std")]
+pub use stream::{from_reader, to_writer};
 
 /// Serializes `value` into `buf`, returning the written portion.
 ///

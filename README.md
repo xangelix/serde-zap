@@ -20,7 +20,7 @@ It combines some of the best ideas out there in other crates, and a few extras:
 
 serde-zap is built to be the fastest serde trait compatible binary serializer and deserializer, and it gets there by construction rather than by tuning: single-branch varint decoding, one capacity check per written field, zero-copy borrowed decoding, and bulk-copy paths for strings and byte buffers.
 
-All numbers below are from the [rust_serialization_benchmark](https://github.com/djkoloski/rust_serialization_benchmark) harness (criterion defaults, `target-cpu=native`) running serde-zap **0.1.0 from crates.io** on a GitHub-hosted runner, 2026-07-31. Absolute numbers vary by machine; the _ratios_ are the point.
+All numbers below are the **independently published results** from the [rust_serialization_benchmark](https://github.com/djkoloski/rust_serialization_benchmark) README: serde-zap was merged upstream in [PR #151](https://github.com/djkoloski/rust_serialization_benchmark/pull/151) as **0.1.0 from crates.io**, and the tables are from the [2026-08-02 run](https://github.com/djkoloski/rust_serialization_benchmark/tree/f1de883f94316724798a9d4e5a452839fb4627cb) (criterion defaults on a GitHub-hosted AMD EPYC 7763 runner). Absolute numbers vary by machine; the _ratios_ are the point.
 
 ### Which of the benchmark's crates actually use serde?
 
@@ -32,93 +32,94 @@ Three more are serde-_capable_ but are benchmarked through their own derive macr
 
 | crate           | serialize    | deserialize   | borrow       | size (B)  |
 | --------------- | ------------ | ------------- | ------------ | --------- |
-| **serde-zap**   | **171.6 µs** | 2198.9 µs     | **551.4 µs** | 741,295   |
-| postcard        | 326.5 µs     | 2248.3 µs     | 647.8 µs     | 724,953   |
-| bincode 1.3.3   | 386.4 µs     | **2179.8 µs** | 613.4 µs     | 1,045,784 |
-| dlhn            | 483.0 µs     | 2586.3 µs     | —            | 724,953   |
-| `serde_bare`    | 508.0 µs     | 2178.9 µs     | —            | 765,778   |
-| cbor4ii         | 519.3 µs     | 4.82 ms       | 3.06 ms      | 1,407,835 |
-| serde-brief     | 1.19 ms      | 4.19 ms       | 2.39 ms      | 1,584,946 |
-| rmp-serde       | 1.22 ms      | 3.05 ms       | 1.35 ms      | 784,997   |
-| `serde_cbor`    | 1.65 ms      | 4.46 ms       | 2.62 ms      | 1,407,835 |
-| pot             | 1.97 ms      | 5.88 ms       | 3.72 ms      | 971,922   |
-| flexon          | 2.13 ms      | 4.03 ms       | —            | 1,827,461 |
-| ciborium        | 2.75 ms      | 10.0 ms       | —            | 1,407,835 |
-| `serde_json`    | 3.20 ms      | 5.98 ms       | —            | 1,827,461 |
-| nachricht-serde | 4.65 ms      | 3.96 ms       | 2.14 ms      | 818,669   |
-| flexbuffers     | 5.94 ms      | 6.26 ms       | 4.51 ms      | 1,829,756 |
-| ron             | 10.4 ms      | 23.5 ms       | 21.2 ms      | 1,607,459 |
+| **serde-zap**   | **199.2 µs** | 2.171 ms      | **508.6 µs** | 741,295   |
+| postcard        | 425.1 µs     | 2.310 ms      | 619.7 µs     | 724,953   |
+| bincode 1.3.3   | 525.1 µs     | **2.065 ms**  | 589.1 µs     | 1,045,784 |
+| cbor4ii         | 616.9 µs     | 4.956 ms      | 3.440 ms     | 1,407,835 |
+| dlhn            | 661.2 µs     | 2.586 ms      | —            | 724,953   |
+| `serde_bare`    | 685.6 µs     | 2.089 ms      | —            | 765,778   |
+| serde-brief     | 1.32 ms      | 4.575 ms      | 3.004 ms     | 1,584,946 |
+| rmp-serde       | 1.54 ms      | 3.165 ms      | 1.429 ms     | 784,997   |
+| `serde_cbor`    | 2.03 ms      | 4.674 ms      | 3.260 ms     | 1,407,835 |
+| pot             | 2.33 ms      | 6.226 ms      | 4.698 ms     | 971,922   |
+| flexon          | 2.69 ms      | 3.892 ms      | —            | 1,827,461 |
+| ciborium        | 3.93 ms      | 11.06 ms      | —            | 1,407,835 |
+| `serde_json`    | 3.99 ms      | 6.027 ms      | —            | 1,827,461 |
+| nachricht-serde | 5.34 ms      | 4.054 ms      | 2.463 ms     | 818,669   |
+| flexbuffers     | 6.84 ms      | 7.337 ms      | 5.660 ms     | 1,829,756 |
+| ron             | 11.4 ms      | 26.9 ms       | 24.4 ms      | 1,607,459 |
 
 ### `mesh` (125,000 triangles, all `f32`)
 
 | crate           | serialize    | deserialize   | size (B)   |
 | --------------- | ------------ | ------------- | ---------- |
-| **serde-zap**   | **441.4 µs** | 1857.5 µs     | 6,000,005  |
-| postcard        | 441.5 µs     | **1355.3 µs** | 6,000,003  |
-| bincode 1.3.3   | 3.97 ms      | 5.65 ms       | 6,000,008  |
-| `serde_bare`    | 4.32 ms      | 5.33 ms       | 6,000,003  |
-| dlhn            | 4.78 ms      | 7.94 ms       | 6,000,003  |
-| cbor4ii         | 6.02 ms      | 41.6 ms       | 13,125,016 |
-| serde-brief     | 13.7 ms      | 25.8 ms       | 15,750,015 |
-| rmp-serde       | 15.4 ms      | 16.2 ms       | 8,125,006  |
-| `serde_cbor`    | 29.6 ms      | 34.8 ms       | 13,122,324 |
-| pot             | 32.5 ms      | 51.8 ms       | 10,122,342 |
-| ciborium        | 50.7 ms      | 94.1 ms       | 13,122,324 |
-| flexon          | 69.4 ms      | 55.4 ms       | 26,192,883 |
-| `serde_json`    | 80.1 ms      | 93.5 ms       | 26,192,883 |
-| flexbuffers     | 96.6 ms      | 68.2 ms       | 26,609,424 |
-| nachricht-serde | 102.4 ms     | 26.2 ms       | 8,125,037  |
-| ron             | 169.3 ms     | 487.9 ms      | 22,192,885 |
+| **serde-zap**   | **481.4 µs** | 1.304 ms      | 6,000,005  |
+| postcard        | 493.6 µs     | **1.076 ms**  | 6,000,003  |
+| bincode 1.3.3   | 5.56 ms      | 6.01 ms       | 6,000,008  |
+| `serde_bare`    | 5.80 ms      | 4.82 ms       | 6,000,003  |
+| dlhn            | 6.03 ms      | 6.99 ms       | 6,000,003  |
+| cbor4ii         | 8.99 ms      | 44.5 ms       | 13,125,016 |
+| serde-brief     | 17.2 ms      | 34.7 ms       | 15,750,015 |
+| rmp-serde       | 19.8 ms      | 16.9 ms       | 8,125,006  |
+| `serde_cbor`    | 32.3 ms      | 43.9 ms       | 13,122,324 |
+| pot             | 40.2 ms      | 63.9 ms       | 10,122,342 |
+| ciborium        | 63.3 ms      | 111.1 ms      | 13,122,324 |
+| flexon          | 68.6 ms      | 55.5 ms       | 26,192,883 |
+| `serde_json`    | 86.0 ms      | 99.7 ms       | 26,192,883 |
+| flexbuffers     | 104.4 ms     | 80.6 ms       | 26,609,424 |
+| nachricht-serde | 118.6 ms     | 26.0 ms       | 8,125,037  |
+| ron             | 170.5 ms     | 589.6 ms      | 22,192,885 |
 
 ### `minecraft_savedata` (500 deeply nested player saves)
 
 | crate           | serialize    | deserialize   | borrow       | size (B)  |
 | --------------- | ------------ | ------------- | ------------ | --------- |
-| **serde-zap**   | **212.9 µs** | 1942.6 µs     | **667.7 µs** | 367,413   |
-| postcard        | 384.3 µs     | 2069.7 µs     | 823.0 µs     | 367,489   |
-| bincode 1.3.3   | 493.3 µs     | **1830.1 µs** | 870.1 µs     | 569,975   |
-| dlhn            | 550.4 µs     | 2591.4 µs     | —            | 366,496   |
-| `serde_bare`    | 603.5 µs     | 2379.2 µs     | —            | 356,311   |
-| cbor4ii         | 723.8 µs     | 4.36 ms       | 3.11 ms      | 1,109,831 |
-| serde-brief     | 1.13 ms      | 5.10 ms       | 3.37 ms      | 1,276,014 |
-| rmp-serde       | 1.32 ms      | 2.86 ms       | 1.58 ms      | 424,533   |
-| `serde_cbor`    | 1.58 ms      | 4.31 ms       | 3.02 ms      | 1,109,821 |
-| pot             | 2.00 ms      | 5.14 ms       | 3.81 ms      | 599,125   |
-| flexon          | 2.40 ms      | 4.54 ms       | —            | 1,623,191 |
-| ciborium        | 2.75 ms      | 8.57 ms       | —            | 1,109,821 |
-| `serde_json`    | 3.23 ms      | 7.01 ms       | —            | 1,623,191 |
-| nachricht-serde | 4.45 ms      | 3.74 ms       | 2.49 ms      | 449,745   |
-| flexbuffers     | 7.04 ms      | 6.06 ms       | 4.71 ms      | 1,187,688 |
-| ron             | 7.85 ms      | 24.5 ms       | 22.5 ms      | 1,465,223 |
+| **serde-zap**   | **233.2 µs** | 1.949 ms      | **677.5 µs** | 367,413   |
+| postcard        | 451.5 µs     | 2.159 ms      | 823.5 µs     | 367,489   |
+| bincode 1.3.3   | 600.4 µs     | **1.837 ms**  | 840.2 µs     | 569,975   |
+| dlhn            | 700.3 µs     | 2.590 ms      | —            | 366,496   |
+| `serde_bare`    | 707.3 µs     | 2.313 ms      | —            | 356,311   |
+| cbor4ii         | 765.2 µs     | 4.335 ms      | 3.214 ms     | 1,109,831 |
+| serde-brief     | 1.18 ms      | 5.043 ms      | 3.473 ms     | 1,276,014 |
+| rmp-serde       | 1.48 ms      | 2.992 ms      | 1.700 ms     | 424,533   |
+| `serde_cbor`    | 1.93 ms      | 4.579 ms      | 3.368 ms     | 1,109,821 |
+| pot             | 2.41 ms      | 5.842 ms      | 4.754 ms     | 599,125   |
+| flexon          | 2.69 ms      | 4.521 ms      | —            | 1,623,191 |
+| `serde_json`    | 3.71 ms      | 6.788 ms      | —            | 1,623,191 |
+| ciborium        | 3.74 ms      | 9.905 ms      | —            | 1,109,821 |
+| nachricht-serde | 4.89 ms      | 3.816 ms      | 2.779 ms     | 449,745   |
+| flexbuffers     | 7.78 ms      | 6.825 ms      | 5.457 ms     | 1,187,688 |
+| ron             | 8.15 ms      | 27.3 ms       | 25.7 ms      | 1,465,223 |
 
 ### `mk48` (1,000 enum-heavy game updates)
 
 | crate           | serialize    | deserialize   | size (B)  |
 | --------------- | ------------ | ------------- | --------- |
-| **serde-zap**   | **813.2 µs** | 4009.3 µs     | 1,406,257 |
-| postcard        | 1679.1 µs    | **3961.0 µs** | 1,311,281 |
-| cbor4ii         | 2.31 ms      | 16.8 ms       | 6,012,539 |
-| bincode 1.3.3   | 2.70 ms      | 4.28 ms       | 1,854,234 |
-| `serde_bare`    | 2.95 ms      | 4.91 ms       | 1,319,999 |
-| dlhn            | 3.36 ms      | 6.56 ms       | 1,311,281 |
-| serde-brief     | 4.66 ms      | 18.1 ms       | 6,951,772 |
-| `serde_cbor`    | 8.72 ms      | 18.0 ms       | 6,012,373 |
-| rmp-serde       | 8.88 ms      | 9.99 ms       | 1,745,322 |
-| pot             | 11.5 ms      | 24.6 ms       | 2,604,812 |
-| flexon          | 12.7 ms      | 24.0 ms       | 9,390,461 |
-| `serde_json`    | 17.5 ms      | 31.0 ms       | 9,390,461 |
-| ciborium        | 17.7 ms      | 42.1 ms       | 6,012,373 |
-| nachricht-serde | 25.4 ms      | 14.6 ms       | 1,770,060 |
-| flexbuffers     | 35.5 ms      | 30.8 ms       | 5,352,680 |
-| ron             | 45.4 ms      | 145.4 ms      | 8,677,703 |
+| **serde-zap**   | **719.3 µs** | **4.045 ms**  | 1,406,257 |
+| postcard        | 1.87 ms      | 4.159 ms      | 1,311,281 |
+| cbor4ii         | 3.47 ms      | 16.9 ms       | 6,012,539 |
+| bincode 1.3.3   | 3.86 ms      | 4.357 ms      | 1,854,234 |
+| `serde_bare`    | 4.12 ms      | 4.992 ms      | 1,319,999 |
+| dlhn            | 4.45 ms      | 6.64 ms       | 1,311,281 |
+| serde-brief     | 5.44 ms      | 20.5 ms       | 6,951,772 |
+| `serde_cbor`    | 10.1 ms      | 20.1 ms       | 6,012,373 |
+| rmp-serde       | 10.7 ms      | 11.1 ms       | 1,745,322 |
+| pot             | 13.9 ms      | 29.7 ms       | 2,604,812 |
+| flexon          | 15.0 ms      | 24.1 ms       | 9,390,461 |
+| `serde_json`    | 20.3 ms      | 30.9 ms       | 9,390,461 |
+| ciborium        | 23.6 ms      | 53.9 ms       | 6,012,373 |
+| nachricht-serde | 29.4 ms      | 16.4 ms       | 1,770,060 |
+| flexbuffers     | 39.4 ms      | 35.6 ms       | 5,352,680 |
+| ron             | 45.8 ms      | 172.7 ms      | 8,677,703 |
 
 ### How to read this
 
-- **serde-zap has the fastest serialize of every serde-trait crate on every dataset** — 1.9× the runner-up on log, 1.8× on minecraft, 2.1× on mk48, and a photo-finish tie with postcard on mesh (both saturate memory bandwidth).
-- **serde-zap has the fastest borrowed (zero-copy) deserialize** everywhere it is measured (log, minecraft).
-- **Owned deserialize is a near-tie at the top**: bincode 1.x / `serde_bare` / postcard / serde-zap sit within a few percent of each other per dataset and machine — that metric is dominated by identical allocation work, not decoder speed (see borrow for the pure-decode comparison, which serde-zap wins).
-- **Sizes**: serde-zap matches the best-in-class binary formats (byte-identical to bincode 2's varint scheme) — smallest or second-smallest of the serde crates on three of four datasets.
-- **bincode 2's serde adapter** (`bincode::serde`, measured locally on a faster machine, same run): serde-zap beat it by 1.24× (log serialize), 1.20× (log deserialize), 1.33× (log borrow), and 1.25× (mesh deserialize); mesh serialize was a tie. bincode 2's _native_ (non-serde) API — what the harness benchmarks as "bincode" — remains faster than any serde path on mesh, which is precisely the gap `full_vec`/`pod_vec` exist to close for users who can opt in.
+- **serde-zap has the fastest serialize of every serde-trait crate on every dataset** — 2.1× the runner-up on log, 1.9× on minecraft, 2.6× on mk48, and a narrow win over postcard on mesh (both saturate memory bandwidth).
+- **serde-zap has the fastest borrowed (zero-copy) deserialize** everywhere it is measured (log, minecraft) — 1.16× the runner-up (bincode 1.x) on log, 1.2× the runner-up (postcard) on minecraft.
+- **Owned deserialize is a near-tie at the top**: serde-zap is outright fastest of the serde-trait crates on mk48, sits within ~6% of the leader (bincode 1.x) on log and minecraft, and is second to postcard on mesh. That metric is dominated by identical allocation work, not decoder speed (see borrow for the pure-decode comparison, which serde-zap wins).
+- **Sizes**: serde-zap is byte-identical to bincode 2's varint scheme on all four datasets (identical raw _and_ zlib/zstd-compressed sizes in the published tables) — within a few percent of the smallest serde-trait encoding on every dataset (2 bytes behind the smallest on mesh).
+- **bincode 2's serde adapter** (`bincode::serde`) is not covered by the upstream harness, which benches bincode 2 through its native API only. Measured locally on the same datasets/seed with the harness's calling convention (`to_slice` into a preallocated buffer vs `encode_to_vec`): serde-zap beat it by 1.5× (log serialize), 1.1× (log deserialize), 1.4× (log borrow), 2.2× (mesh serialize), and 1.4× (mesh deserialize) — with byte-identical wire output.
+- **bincode 2's _native_ (non-serde) API** — what the harness benchmarks as "bincode" — beats every serde path only on mesh _deserialize_ (790.9 µs); on mesh _serialize_ it is 5× slower than serde-zap. The real non-serde frontier on mesh is ~149 µs ser/de (savefile, speedy, wincode — none go through serde), which is precisely the gap `full_vec`/`pod_vec` exist to close for users who can opt in.
 
 ## Usage
 

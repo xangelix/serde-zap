@@ -6,9 +6,10 @@ on:
 
 env:
   BENCH_REPO: https://github.com/djkoloski/rust_serialization_benchmark.git
-  # Pinned for reproducibility; ci/rust_serialization_benchmark.patch is
-  # generated against this commit. Bump both together when updating.
-  BENCH_COMMIT: dcbb4332a911512d95561d3ca99c56a6c7edab5e
+  # Pinned for reproducibility. Upstream includes serde-zap since PR #151;
+  # ci/rust_serialization_benchmark.patch only redirects it to the local
+  # checkout. Bump both together when updating.
+  BENCH_COMMIT: f1de883f94316724798a9d4e5a452839fb4627cb
 
 jobs:
   test:
@@ -103,9 +104,6 @@ jobs:
           git -C rust_serialization_benchmark checkout "$BENCH_COMMIT"
       - name: Patch in serde-zap (local path dependency)
         run: git -C rust_serialization_benchmark apply ../serde-zap/ci/rust_serialization_benchmark.patch
-      - name: Pin compactly-derive to match compactly 0.1.7
-        working-directory: rust_serialization_benchmark
-        run: cargo update -p compactly-derive --precise 0.1.7
       - name: Run full benchmark (prints to log)
         working-directory: rust_serialization_benchmark
         run: cargo run -p bencher

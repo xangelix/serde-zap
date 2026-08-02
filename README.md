@@ -2,8 +2,18 @@
 
 [![Crates.io](https://img.shields.io/crates/v/serde-zap)](https://crates.io/crates/serde-zap)
 [![Docs.rs](https://docs.rs/serde-zap/badge.svg)](https://docs.rs/serde-zap)
+[![Independent benchmarks](https://img.shields.io/badge/independent%20benchmarks-fastest%20on%20serde-blue)](https://github.com/djkoloski/rust_serialization_benchmark)
 
-A fast binary serialization format for [serde](https://serde.rs), built to be the quickest way to turn Rust values into bytes and back... on serde.
+**The fastest binary serializer for [serde](https://serde.rs)'s standard traits — [independently verified](https://github.com/djkoloski/rust_serialization_benchmark).**
+
+serde-zap turns Rust values into bytes and back faster than any other library that works through serde's standard `Serialize`/`Deserialize` traits. In the [rust_serialization_benchmark](https://github.com/djkoloski/rust_serialization_benchmark), serde-zap holds as, among all 16 serde-trait libraries measured:
+
+- the **fastest serialize on every dataset** — 1.9–2.6× the runner-up (postcard) on the structured datasets, narrow win at the memory-bandwidth limit on flat numeric data,
+- the **fastest zero-copy (borrowed) deserialize** everywhere the suite measures it,
+- the **fastest owned deserialize on `mk48`**, a near-tie at the top on the rest,
+- **byte-identical wire output** to bincode 2's varint scheme on every benchmark dataset.
+
+No custom derive, no extra traits, no schema language: if your types already derive `Serialize`/`Deserialize`, switching to serde-zap is a one-line change.
 
 It combines some of the best ideas out there in other crates, and a few extras:
 
@@ -18,7 +28,7 @@ It combines some of the best ideas out there in other crates, and a few extras:
 
 ## Performance
 
-serde-zap is built to be the fastest serde trait compatible binary serializer and deserializer, and it gets there by construction rather than by tuning: single-branch varint decoding, one capacity check per written field, zero-copy borrowed decoding, and bulk-copy paths for strings and byte buffers.
+`serde-zap` is the fastest way to serialize and deserialize through serde's standard traits (see the independently published results below) and it gets there by construction rather than by tuning: single-branch varint decoding, one capacity check per written field, zero-copy borrowed decoding, and bulk-copy paths for strings and byte buffers.
 
 All numbers below are the **independently published results** from the [rust_serialization_benchmark](https://github.com/djkoloski/rust_serialization_benchmark) README: serde-zap was merged upstream in [PR #151](https://github.com/djkoloski/rust_serialization_benchmark/pull/151) as **0.1.0 from crates.io**, and the tables are from the [2026-08-02 run](https://github.com/djkoloski/rust_serialization_benchmark/tree/f1de883f94316724798a9d4e5a452839fb4627cb) (criterion defaults on a GitHub-hosted AMD EPYC 7763 runner). Absolute numbers vary by machine; the _ratios_ are the point.
 
@@ -219,7 +229,7 @@ struct Cloud {
 
 ## When serde-zap is the right choice
 
-- You want the **fastest serde-compatible** binary serialization.
+- You want the **fastest serde-compatible** binary serialization (as measured by [rust_serialization_benchmark](https://github.com/djkoloski/rust_serialization_benchmark)).
 - `no_std` / embedded: `to_slice` and `from_bytes` work with zero allocation.
 - You deserialize large payloads and can borrow: zero-copy `&str`/`&[u8]`.
 - Big flat vectors of numbers/POD structs: `pod_vec` turns ser/de into memcpy.

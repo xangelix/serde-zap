@@ -7,6 +7,8 @@
 //! - Underlying I/O errors come back verbatim; serde_zap errors become
 //!   `ErrorKind::InvalidData`.
 
+#![cfg(feature = "std")]
+
 use std::io::{self, Cursor, Read, Write};
 
 use serde::{Deserialize, Serialize};

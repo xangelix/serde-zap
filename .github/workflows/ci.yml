@@ -26,6 +26,8 @@ jobs:
         run: cargo build --no-default-features
       - name: no_std test check
         run: cargo test --no-default-features --tests
+      - name: alloc-only test check
+        run: cargo test --no-default-features --features alloc --tests
 
   lint:
     name: Lint (fmt, clippy, typos, package)

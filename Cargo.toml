@@ -1,6 +1,6 @@
 [package]
 name = "serde-zap"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "The fastest binary serializer for serde's standard traits — independently benchmarked."
 license = "MIT OR Apache-2.0"
